@@ -53,14 +53,14 @@ export default function AgeGate() {
           <>
             <div className="w-16 h-0.5 bg-accent mx-auto mb-6"></div>
             <p className="text-text-secondary mb-8 leading-relaxed">
-              You must be of legal drinking age to enter this website. Please confirm that you are <strong className="text-primary">19 years of age or older</strong>.
+              You must be of legal drinking age to enter this website. Please confirm that you are <strong className="text-primary">18 years of age or older</strong>.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleVerify}
                 className="flex-1 btn-primary text-lg py-4"
               >
-                Yes, I&apos;m 19+
+                Yes, I&apos;m 18+
               </button>
               <button
                 onClick={handleDeny}

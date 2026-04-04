@@ -95,7 +95,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center text-[12px] md:text-[14px] text-[var(--color-primary)] pb-4 opacity-70">
           <p>&copy; {new Date().getFullYear()} Petrolia Liquor Store.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
-            <span>MUST BE 19+ TO PURCHASE</span>
+            <span>MUST BE 18+ TO PURCHASE</span>
           </div>
         </div>
       </div>
