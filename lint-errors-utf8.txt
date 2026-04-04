@@ -1,0 +1,34 @@
+﻿
+> petrolia-liquor-store@0.1.0 lint
+> eslint
+
+
+C:\Users\RAV3N\Downloads\VIBE CODE\PETROLIA LIQUOR STORE\petrolia-liquor-store\import-csv.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  2:14  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  3:19  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\Users\RAV3N\Downloads\VIBE CODE\PETROLIA LIQUOR STORE\petrolia-liquor-store\seed-supabase.ts
+  18:46  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  39:13  warning  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\RAV3N\Downloads\VIBE CODE\PETROLIA LIQUOR STORE\petrolia-liquor-store\src\app\admin-portal-x9k2\page.tsx
+  112:9  warning  'categoryOptions' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\RAV3N\Downloads\VIBE CODE\PETROLIA LIQUOR STORE\petrolia-liquor-store\src\app\layout.tsx
+  26:9  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+C:\Users\RAV3N\Downloads\VIBE CODE\PETROLIA LIQUOR STORE\petrolia-liquor-store\src\app\login\page.tsx
+  22:13  warning  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\RAV3N\Downloads\VIBE CODE\PETROLIA LIQUOR STORE\petrolia-liquor-store\src\app\page.tsx
+  16:38  warning  'picksRes' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\RAV3N\Downloads\VIBE CODE\PETROLIA LIQUOR STORE\petrolia-liquor-store\src\app\register\page.tsx
+  33:13  warning  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\RAV3N\Downloads\VIBE CODE\PETROLIA LIQUOR STORE\petrolia-liquor-store\src\components\Navbar.tsx
+  225:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+Ô£û 11 problems (4 errors, 7 warnings)
+

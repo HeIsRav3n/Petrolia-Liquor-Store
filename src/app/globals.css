@@ -1,0 +1,386 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-surface: var(--surface);
+  --color-surface-dark: var(--surface-dark);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-background: var(--background);
+  
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-serif: "New York", "Iowan Old Style", "Apple Garamond", Baskerville, "Times New Roman", "Droid Serif", Times, "Source Serif Pro", serif;
+  --font-display: "Montserrat", sans-serif;
+}
+
+@layer utilities {
+  .price-text {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.15em;
+    letter-spacing: 0.025em;
+    color: var(--color-primary);
+    font-weight: 500;
+  }
+
+  .drunk-wobble {
+    animation: drunk-wobble 4s infinite ease-in-out;
+  }
+  .drunk-leg-left {
+    animation: drunk-leg-left 1.5s infinite ease-in-out;
+    transform-origin: 50% 55%;
+  }
+  .drunk-leg-right {
+    animation: drunk-leg-right 1.5s infinite ease-in-out;
+    transform-origin: 50% 55%;
+  }
+  .drunk-arm-swing {
+    animation: drunk-arm-swing 1.5s infinite ease-in-out;
+    transform-origin: 50% 30%;
+  }
+  .drunk-arm-drink {
+    animation: drunk-arm-drink 4s infinite ease-in-out;
+    transform-origin: 50% 30%;
+  }
+  .drunk-hiccup {
+    animation: drunk-hiccup 4s infinite ease-in-out;
+  }
+}
+
+@layer base {
+  :root {
+    --primary: #840404;
+    --primary-light: #ce0606;
+    --primary-dark: #6b0303;
+    --surface: #f2f2f2;
+    --surface-dark: #dcdcdc;
+    --text-primary: #2c2c2c;
+    --text-secondary: #585858;
+    --border: #ececec;
+    --background: #ffffff;
+  }
+
+  /* Dim/Ashy Dark Theme */
+  [data-theme="dark"] {
+    --primary: #a32222;
+    --primary-light: #e63939;
+    --primary-dark: #5c0f0f;
+    --surface: #2a2a2a;
+    --surface-dark: #1f1f1f;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --border: #3d3d3d;
+    --background: #1a1a1a;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-text-primary);
+    background-color: var(--color-background);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    color: var(--color-primary);
+    text-transform: uppercase;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.125rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    transition-property: all;
+    transition-duration: 200ms;
+  }
+  .btn-primary:hover {
+    background-color: var(--color-primary-dark);
+  }
+  .btn-primary:active {
+    background-color: #530303;
+  }
+
+  .btn-outline {
+    border-width: 2px;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.125rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    transition-property: all;
+    transition-duration: 200ms;
+  }
+  .btn-outline:hover {
+    border-color: var(--color-primary-dark);
+    color: var(--color-primary-dark);
+  }
+  .btn-outline:active {
+    border-color: #530303;
+    color: #530303;
+  }
+
+  .btn-call {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.125rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    transition-property: all;
+    transition-duration: 200ms;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .btn-call:hover {
+    background-color: var(--color-primary-dark);
+  }
+
+  .product-card {
+    background-color: var(--color-surface);
+    transition-property: all;
+    transition-duration: 200ms;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    border-width: 1px;
+    border-color: var(--color-border);
+  }
+
+  .product-badge {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    transform: translateY(-50%);
+    z-index: 10;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .badge-label {
+    display: inline-block;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0.25rem;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    background-color: var(--color-primary);
+    text-transform: uppercase;
+    border-radius: 0.125rem;
+  }
+
+  .filter-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    transition-property: all;
+    transition-duration: 200ms;
+    border-width: 1px;
+    border-color: var(--color-border);
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    border-radius: 0.125rem;
+  }
+  .filter-btn:hover {
+    background-color: #fafafa;
+  }
+
+  .filter-btn-active {
+    background-color: #000;
+    color: white;
+    border-color: #000;
+  }
+  .filter-btn-active:hover {
+    background-color: #333;
+  }
+
+  .section-title {
+    font-size: 1.333em;
+    color: var(--color-primary);
+    margin-bottom: 30px;
+    font-family: var(--font-serif);
+    text-transform: uppercase;
+  }
+  @media (min-width: 768px) {
+    .section-title {
+      font-size: 1.733em;
+    }
+  }
+
+  .section-subtitle {
+    color: var(--color-text-primary);
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .glass-card {
+    background-color: rgba(var(--color-surface), 0.9);
+    backdrop-filter: blur(12px);
+    border-width: 1px;
+    border-color: var(--color-border);
+    border-radius: 0.125rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .input-field {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-width: 1px;
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    transition-property: all;
+    transition-duration: 200ms;
+    border-radius: 0.125rem;
+  }
+  .input-field:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-color: #9ca3af;
+    background-color: var(--color-background);
+  }
+
+  .admin-card {
+    background-color: var(--color-surface);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border-width: 1px;
+    border-color: var(--color-border);
+    padding: 1.5rem;
+    border-radius: 0.125rem;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    color: var(--color-primary);
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-dark);
+  border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-dark);
+}
+
+/* Age Gate overlay styles */
+.age-gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+}
+
+/* Drunk Stickman Animations */
+@keyframes drunk-wobble {
+  0% { transform: rotate(0deg) translateX(0px); }
+  25% { transform: rotate(5deg) translateX(2px); }
+  50% { transform: rotate(-3deg) translateX(-1px); }
+  75% { transform: rotate(4deg) translateX(1px); }
+  100% { transform: rotate(0deg) translateX(0px); }
+}
+
+@keyframes drunk-leg-left {
+  0%, 100% { transform: rotate(-20deg); }
+  50% { transform: rotate(20deg); }
+}
+
+@keyframes drunk-leg-right {
+  0%, 100% { transform: rotate(20deg); }
+  50% { transform: rotate(-20deg); }
+}
+
+@keyframes drunk-arm-swing {
+  0%, 100% { transform: rotate(-15deg); }
+  50% { transform: rotate(15deg); }
+}
+
+@keyframes drunk-arm-drink {
+  0%, 100% { transform: rotate(0deg); }
+  40% { transform: rotate(0deg); }
+  50% { transform: rotate(-100deg); } /* Lifts bottle */
+  60% { transform: rotate(-100deg); } /* Holds */
+  70% { transform: rotate(0deg); } /* Lowers */
+}
+
+@keyframes drunk-hiccup {
+  0%, 100% { transform: translateY(0); }
+  55% { transform: translateY(0); }
+  58% { transform: translateY(-4px); } /* Hiccup up */
+  61% { transform: translateY(0); } /* Down */
+}

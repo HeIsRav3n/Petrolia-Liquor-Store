@@ -1,0 +1,2 @@
+Categories: ["Wine","Vodka","Spirits","Rum","Whisky","Tequila","Gin","Beer","Coolers & Ciders"]
+Types: ["Wine","Vodka","Sparkling","Rum","Whiskey","","Port","Liqueur","Tequila","Gin","Beer","Cooler","Miscellaneous","Brandy","Rice Wine","Soju","Grain Alcohol","Bitters","Shots","Cognac","Sherry","Ice Wine","Sake"]
