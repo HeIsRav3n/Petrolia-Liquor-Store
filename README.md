@@ -55,3 +55,25 @@ Products are served via a custom API route (`/api/products`) which reads from a 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new).
 
 Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Release Quality Gates
+
+This repo includes release workflows and a checklist for:
+- code review
+- security audit
+- automated tests
+- performance test
+- UI/UX QA
+- documentation check
+- CI/CD setup
+- monitoring setup
+- staging deployment
+- production launch
+
+See `docs/release-checklist.md`.
+
+### Required GitHub Secrets (for deploy workflows)
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`

@@ -7,6 +7,7 @@ import FloatingCart from "@/components/FloatingCart";
 import AvailabilityPopup from "@/components/AvailabilityPopup";
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "Petrolia Liquor Store",
@@ -29,8 +30,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col transition-colors duration-300">
-        {/* Placeholder for Analytics/Monitoring (e.g., @vercel/analytics) */}
-        {/* <Analytics /> */}
+        <Analytics />
         <ThemeProvider>
           <AgeGate />
           <CartProvider>

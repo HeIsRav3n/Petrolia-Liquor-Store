@@ -2,8 +2,25 @@ import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://gqgrpuuisgzmznhwbvdh.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxZ3JwdXVpc2d6bXpuaHdidmRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODc3ODMsImV4cCI6MjA5MDY2Mzc4M30.d6tBWYbonYkOsuGeB24z6wDpZH0Nksf72v5kpx-awYI';
+type ProductRow = {
+  id: string | number;
+  name?: string;
+  description?: string;
+  price?: string | number;
+  category?: string;
+  subcategory?: string;
+  type?: string;
+  country?: string;
+  size?: string;
+  image?: string;
+};
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -12,10 +29,10 @@ async function seed() {
   
   const dataPath = path.join(process.cwd(), 'data', 'products.json');
   const fileData = fs.readFileSync(dataPath, 'utf-8');
-  const products = JSON.parse(fileData);
+  const products = JSON.parse(fileData) as ProductRow[];
   
   // Clean up products mapping to exactly match our Supabase schema
-  const formattedProducts = products.map((p: any) => ({
+  const formattedProducts = products.map((p) => ({
     original_id: p.id,
     name: p.name || 'Unknown',
     description: p.description || '',
@@ -36,7 +53,7 @@ async function seed() {
     const chunk = formattedProducts.slice(i, i + BATCH_SIZE);
     
     // UPSERT using original_id to avoid duplications if run multiple times
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('products')
       .upsert(chunk, { onConflict: 'original_id' });
       
