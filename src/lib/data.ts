@@ -391,7 +391,7 @@ export const STORE_INFO = {
   phoneDisplay: '(780)-438-0448',
   address: '11431 40 Ave NW, Edmonton, AB T6J 0R4',
   hours: [
-    { day: 'Mon - Thu', time: '10:00 AM - 10:00 PM' },
+    { day: 'Mon - Thu', time: '10:00 AM - 9:00 PM' },
     { day: 'Fri - Sat', time: '10:00 AM - 11:00 PM' },
     { day: 'Sunday', time: '10:00 AM - 9:00 PM' },
   ],
