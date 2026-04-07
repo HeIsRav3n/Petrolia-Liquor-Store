@@ -4,12 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { Product } from '@/lib/types';
 
 
-const ADMIN_PASSWORD = 'petrolia2024';
+import { useRouter } from 'next/navigation';
+import { logoutAction } from './actions';
 
 export default function AdminDashboard() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState('');
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -31,40 +30,13 @@ export default function AdminDashboard() {
     setLoading(false);
   }, []);
 
-  // Handle authentication state carefully to avoid react-hooks/set-state-in-effect
   useEffect(() => {
-    const checkAuth = () => {
-      const stored = sessionStorage.getItem('admin-auth');
-      if (stored === 'true') {
-        setAuthenticated(true);
-      }
-    };
-    checkAuth();
-  }, []);
+    fetchProducts();
+  }, [fetchProducts]);
 
-  useEffect(() => {
-    if (authenticated) {
-      const loadProducts = async () => {
-        await fetchProducts();
-      };
-      loadProducts();
-    }
-  }, [authenticated, fetchProducts]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setAuthenticated(true);
-      sessionStorage.setItem('admin-auth', 'true');
-      setAuthError('');
-    } else {
-      setAuthError('Incorrect password');
-    }
-  };
-
-  const handleLogout = () => {
-    setAuthenticated(false);
-    sessionStorage.removeItem('admin-auth');
+  const handleLogout = async () => {
+    await logoutAction();
+    router.push('/admin-portal-x9k2/login');
   };
 
   const handleDelete = async (id: string) => {
@@ -116,43 +88,6 @@ export default function AdminDashboard() {
     outOfStock: products.filter((p) => !p.in_stock).length,
     featured: products.filter((p) => p.featured).length,
   };
-
-  // === LOGIN SCREEN ===
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center p-4">
-        <div className="bg-[var(--color-surface)] rounded-sm border border-[var(--color-border)] p-8 max-w-md w-full animate-scale-in">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-accent to-amber-500 rounded-2xl flex items-center justify-center shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-primary" style={{ fontFamily: 'var(--font-heading)' }}>Admin Portal</h1>
-            <p className="text-text-secondary text-sm mt-1">Enter your password to continue</p>
-          </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter admin password"
-                className="input-field text-center text-lg"
-                autoFocus
-              />
-              {authError && (
-                <p className="text-red-500 text-sm text-center mt-2">{authError}</p>
-              )}
-            </div>
-            <button type="submit" className="btn-primary w-full text-lg py-4">
-              Sign In
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   // === ADMIN DASHBOARD ===
   return (
