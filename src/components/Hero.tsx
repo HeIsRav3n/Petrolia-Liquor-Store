@@ -17,13 +17,13 @@ const slides = [
 
 export default function Hero() {
   return (
-    <div className="bg-[#f5f5f5] py-6 md:py-10">
+    <div className="bg-[#f5f5f5] py-4 md:py-8">
       <div className="max-w-[1200px] mx-auto px-4 md:px-0">
         <Swiper
           modules={[Autoplay, Pagination, EffectFade]}
           effect="fade"
           fadeEffect={{ crossFade: true }}
-          speed={800}
+          speed={700}
           autoplay={{
             delay: 5000,
             disableOnInteraction: false,
@@ -36,42 +36,31 @@ export default function Hero() {
           loop={true}
           className="rounded-sm overflow-hidden shadow-sm"
         >
-          {slides.map((slide) => (
+          {slides.map((slide, index) => (
             <SwiperSlide key={slide.id}>
-              <div className="h-[400px] md:h-[450px] w-full relative">
+              {/* h-[50vw] keeps it proportional; clamp between 200px and 520px */}
+              <div className="h-[220px] sm:h-[320px] md:h-[420px] lg:h-[500px] w-full relative overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={slide.image}
                   alt={slide.title}
-                  className="w-full h-full object-cover brightness-95 contrast-105 grayscale-[0.2]"
+                  className="w-full h-full object-cover brightness-95 contrast-105"
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  decoding={index === 0 ? 'sync' : 'async'}
+                  fetchPriority={index === 0 ? 'high' : 'low'}
                 />
-                {/* Subtle Overlay */}
-                <div className="absolute inset-0 bg-black/5"></div>
+                {/* Subtle vignette overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
               </div>
             </SwiperSlide>
           ))}
         </Swiper>
 
-        {/* Custom Pagination Container */}
-        <div className="flex justify-center mt-6">
-          <div className="custom-swiper-pagination flex gap-3 !static !w-auto"></div>
+        {/* Custom Pagination — CSS is in globals.css */}
+        <div className="flex justify-center mt-4">
+          <div className="custom-swiper-pagination flex gap-3 !static !w-auto" />
         </div>
       </div>
-
-      <style jsx global>{`
-        .custom-swiper-pagination .swiper-pagination-bullet {
-          width: 10px;
-          height: 10px;
-          background: #d1d1d1;
-          opacity: 1;
-          margin: 0 !important;
-          transition: all 0.3s ease;
-        }
-        .custom-swiper-pagination .swiper-pagination-bullet-active {
-          background: #840404 !important;
-          transform: scale(1.1);
-        }
-      `}</style>
     </div>
   );
 }
