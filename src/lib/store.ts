@@ -35,12 +35,22 @@ function loadLocalProducts(): Product[] {
 // ─── Public API (all async) ───────────────────────────────────────────────────
 
 export async function getProducts(): Promise<Product[]> {
-  const { data, error } = await supabase.from(TABLE).select('*');
-  if (error || !data || data.length === 0) {
-    console.warn('[store] Supabase unavailable, using local fallback:', error?.message);
-    return loadLocalProducts();
+  let allProducts: Product[] = [];
+  let from = 0;
+  const step = 1000;
+
+  while (true) {
+    const { data, error } = await supabase.from(TABLE).select('*').range(from, from + step - 1);
+    if (error || !data) {
+      console.warn('[store] Supabase unavailable or error, using fallback:', error?.message);
+      if (allProducts.length === 0) return loadLocalProducts();
+      break;
+    }
+    allProducts.push(...(data as Product[]));
+    if (data.length < step) break;
+    from += step;
   }
-  return data as Product[];
+  return allProducts;
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {
@@ -135,16 +145,34 @@ export async function getFilteredProducts(filters: {
   else if (filters.sort === 'name-desc')  query = query.order('name', { ascending: false });
   else if (filters.sort === 'newest')     query = query.order('created_at', { ascending: false });
 
-  if (filters.limit && filters.limit > 0) query = query.limit(filters.limit);
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.warn('[store] Supabase getFilteredProducts failed, using fallback:', error.message);
-    return loadLocalProducts();
+  let allData: any[] = [];
+  if (filters.limit && filters.limit > 0) {
+    query = query.limit(filters.limit);
+    const { data, error } = await query;
+    if (error) {
+      console.warn('[store] Supabase getFilteredProducts failed, using fallback:', error.message);
+      return loadLocalProducts();
+    }
+    allData = data || [];
+  } else {
+    // No limit provided: fetch all matching by paginating
+    let from = 0;
+    const step = 1000;
+    while (true) {
+      const { data, error } = await query.range(from, from + step - 1);
+      if (error) {
+        console.warn('[store] Supabase getFilteredProducts failed, using fallback:', error.message);
+        if (allData.length === 0) return loadLocalProducts();
+        break;
+      }
+      if (!data) break;
+      allData.push(...data);
+      if (data.length < step) break;
+      from += step;
+    }
   }
 
-  let products = (data || []) as Product[];
+  let products = allData as Product[];
 
   // Client-side full-text search (multi-column OR is simpler this way)
   if (filters.search) {

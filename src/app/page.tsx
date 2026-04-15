@@ -33,7 +33,7 @@ export default function Home() {
       .finally(() => setLoadingBest(false));
 
     // Fetch "Don't Forget These" — Coolers & Ciders, max 4
-    fetch('/api/products?is_miscellaneous=true&in_stock=true&limit=4', { cache: 'no-store' })
+    fetch('/api/products?category=Coolers%20%26%20Ciders&in_stock=true&limit=4', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => setDontForgetProducts(Array.isArray(data) ? data.slice(0, 4) : []))
       .catch(() => setDontForgetProducts([]))
