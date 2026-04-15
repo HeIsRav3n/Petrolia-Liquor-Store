@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.petrolialiquorstore.com'),
   title: "Petrolia Liquor Store",
   description:
     "Your local source for premium beer, wine, and spirits in Petrolia. Shop online, call to order, or visit us in-store.",
@@ -19,6 +20,11 @@ export const metadata: Metadata = {
     description:
       "Your local source for premium beer, wine, and spirits in Petrolia.",
     type: "website",
+    url: "https://www.petrolialiquorstore.com",
+    siteName: "Petrolia Liquor Store",
+  },
+  alternates: {
+    canonical: "https://www.petrolialiquorstore.com",
   },
   icons: {
     icon: "/favicon.ico",
