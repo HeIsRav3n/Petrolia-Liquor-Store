@@ -25,6 +25,8 @@ export default function AdminDashboard() {
   const [statFilter, setStatFilter] = useState<StatFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  const [dbSource, setDbSource] = useState<'supabase' | 'local' | 'unknown'>('unknown');
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -37,13 +39,38 @@ export default function AdminDashboard() {
       const res = await fetch('/api/products', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      setProducts(Array.isArray(data) ? data : []);
+      const products = Array.isArray(data) ? data : [];
+      setProducts(products);
+      // If we got products and they have numeric-string IDs (from Date.now()), they came from Supabase
+      // If all IDs are sequential integers like "1", "2", they came from local JSON
+      const hasSupabaseIds = products.some((p: Product) => p.id && p.id.length > 6);
+      setDbSource(products.length > 0 ? (hasSupabaseIds ? 'supabase' : 'local') : 'unknown');
     } catch {
       showNotification('error', 'Failed to load products');
+      setDbSource('unknown');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleSeedDB = async () => {
+    if (!confirm('This will push all products from your local JSON file into Supabase. Continue?')) return;
+    setSeeding(true);
+    try {
+      const res = await fetch('/api/products?action=seed', { method: 'PUT' });
+      const data = await res.json();
+      if (res.ok) {
+        showNotification('success', `✅ Seeded ${data.inserted} products to Supabase!`);
+        await fetchProducts();
+      } else {
+        showNotification('error', `Seed failed: ${data.error}`);
+      }
+    } catch {
+      showNotification('error', 'Network error — seed failed');
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -176,7 +203,32 @@ export default function AdminDashboard() {
               <p className="text-xs text-gray-400">Petrolia Liquor Store</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {/* DB Status Badge */}
+            <span className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border ${
+              dbSource === 'supabase' ? 'bg-green-50 text-green-700 border-green-200' :
+              dbSource === 'local'    ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                       'bg-gray-50 text-gray-500 border-gray-200'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${
+                dbSource === 'supabase' ? 'bg-green-500' :
+                dbSource === 'local'    ? 'bg-amber-400' : 'bg-gray-400'
+              }`} />
+              {dbSource === 'supabase' ? 'Supabase' : dbSource === 'local' ? 'Local JSON' : 'Checking...'}
+            </span>
+
+            {/* Seed Button — only show when not on Supabase */}
+            {dbSource !== 'supabase' && (
+              <button
+                onClick={handleSeedDB}
+                disabled={seeding}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors px-3 py-2 hover:bg-blue-50 rounded-md border border-blue-200 disabled:opacity-50"
+                title="Push all products to Supabase"
+              >
+                {seeding ? '⏳ Seeding...' : '🗄️ Seed DB'}
+              </button>
+            )}
+
             <a
               href="/"
               target="_blank"

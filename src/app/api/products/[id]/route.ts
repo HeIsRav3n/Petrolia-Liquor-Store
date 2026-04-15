@@ -4,11 +4,11 @@ import { getProductById, updateProduct, deleteProduct } from '@/lib/store';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const product = getProductById(id);
+  const product = await getProductById(id);
   if (!product) {
     return NextResponse.json({ error: 'Product not found' }, { status: 404 });
   }
@@ -22,7 +22,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const product = updateProduct(id, body);
+    const product = await updateProduct(id, body);
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
@@ -33,13 +33,13 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const success = deleteProduct(id);
+  const success = await deleteProduct(id);
   if (!success) {
-    return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Product not found or delete failed' }, { status: 404 });
   }
   return NextResponse.json({ success: true });
 }
