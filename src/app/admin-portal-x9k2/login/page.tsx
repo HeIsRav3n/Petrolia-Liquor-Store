@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { loginAction } from '../actions';
 
 export default function AdminLogin() {
@@ -137,12 +138,12 @@ export default function AdminLogin() {
 
             {/* Back link */}
             <div className="mt-6 text-center">
-              <a
+              <Link
                 href="/"
                 className="text-[12px] text-gray-400 hover:text-[var(--color-primary)] transition-colors"
               >
                 ← Back to Store
-              </a>
+              </Link>
             </div>
           </div>
         </div>
