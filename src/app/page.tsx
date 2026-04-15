@@ -6,29 +6,40 @@ import ProductCard from '@/components/ProductCard';
 import { Product } from '@/lib/types';
 import { useState, useEffect } from 'react';
 
+// Declared outside component — avoids "component created during render" lint error
+function SkeletonGrid() {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-[15px] md:gap-[25px]">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="aspect-[3/4] bg-[var(--color-surface)] animate-pulse rounded-sm" />
+      ))}
+    </div>
+  );
+}
+
 export default function Home() {
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [dontForgetProducts, setDontForgetProducts] = useState<Product[]>([]);
+  const [loadingBest, setLoadingBest] = useState(true);
+  const [loadingDont, setLoadingDont] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const [featuredRes, miscRes] = await Promise.all([
-          fetch('/api/products?featured=true'),
-          fetch('/api/products?is_miscellaneous=true'),
-        ]);
+    // Fetch Best Sellers — featured products, max 4
+    fetch('/api/products?featured=true&limit=4')
+      .then((r) => r.json())
+      .then((data) => setBestSellers(Array.isArray(data) ? data.slice(0, 4) : []))
+      .catch(() => setBestSellers([]))
+      .finally(() => setLoadingBest(false));
 
-        const featuredData = await featuredRes.json();
-        const miscData = await miscRes.json();
-
-        setBestSellers(Array.isArray(featuredData) ? featuredData.slice(0, 4) : []);
-        setDontForgetProducts(Array.isArray(miscData) ? miscData.slice(0, 4) : []);
-      } catch (error) {
-        console.error('Failed to fetch products:', error);
-      }
-    }
-    fetchData();
+    // Fetch "Don't Forget These" — Coolers & Ciders, max 4
+    fetch('/api/products?is_miscellaneous=true&limit=4')
+      .then((r) => r.json())
+      .then((data) => setDontForgetProducts(Array.isArray(data) ? data.slice(0, 4) : []))
+      .catch(() => setDontForgetProducts([]))
+      .finally(() => setLoadingDont(false));
   }, []);
+
+
 
   return (
     <div className="bg-[var(--color-background)]">
@@ -86,18 +97,15 @@ export default function Home() {
               More best selling ›
             </Link>
           </div>
-
-          {bestSellers.length > 0 ? (
+          {loadingBest ? <SkeletonGrid /> : bestSellers.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-[15px] md:gap-[25px]">
               {bestSellers.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-[15px] md:gap-[25px]">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="aspect-[3/4] bg-[var(--color-surface)] animate-pulse rounded-sm" />
-              ))}
+            <div className="text-center py-10 text-[var(--color-text-secondary)] text-sm">
+              No featured products yet — check back soon.
             </div>
           )}
         </section>
@@ -108,22 +116,19 @@ export default function Home() {
             <h2 className="text-[17px] md:text-[22px] font-serif uppercase text-[var(--color-primary)] tracking-wider">
               Don&apos;t Forget These
             </h2>
-            <Link href="/category/miscellaneous" className="text-[12px] text-[var(--color-primary)] hover:underline">
+            <Link href="/category/coolers" className="text-[12px] text-[var(--color-primary)] hover:underline">
               More ›
             </Link>
           </div>
-
-          {dontForgetProducts.length > 0 ? (
+          {loadingDont ? <SkeletonGrid /> : dontForgetProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-[15px] md:gap-[25px]">
               {dontForgetProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-[15px] md:gap-[25px]">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="aspect-[3/4] bg-[var(--color-surface)] animate-pulse rounded-sm" />
-              ))}
+            <div className="text-center py-10 text-[var(--color-text-secondary)] text-sm">
+              Check out our coolers &amp; ciders selection.
             </div>
           )}
         </section>

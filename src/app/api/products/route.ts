@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   
+  const limitParam = searchParams.get('limit');
   const filters = {
     category: searchParams.get('category') || undefined,
     subcategory: searchParams.get('subcategory') || undefined,
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
     is_new: searchParams.get('is_new') === 'true' ? true : undefined,
     is_miscellaneous: searchParams.get('is_miscellaneous') === 'true' ? true : undefined,
     sort: searchParams.get('sort') || undefined,
+    limit: limitParam ? parseInt(limitParam, 10) : undefined,
   };
 
   const products = getFilteredProducts(filters);

@@ -5,6 +5,13 @@ import path from 'path';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'products.json');
 
+// ─── In-memory cache — eliminates repeated disk reads ───────────────────────
+let _cache: Product[] | null = null;
+
+function invalidateCache() {
+  _cache = null;
+}
+
 function ensureDataDir() {
   const dir = path.dirname(DATA_FILE);
   if (!fs.existsSync(dir)) {
@@ -13,10 +20,17 @@ function ensureDataDir() {
 }
 
 function loadProducts(): Product[] {
+  if (_cache !== null) return _cache;
+
   ensureDataDir();
   if (fs.existsSync(DATA_FILE)) {
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    return JSON.parse(raw);
+    try {
+      const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+      _cache = JSON.parse(raw) as Product[];
+      return _cache;
+    } catch {
+      // Corrupt file — fall through to defaults
+    }
   }
   // First run - seed with default products
   saveProducts(defaultProducts);
@@ -26,6 +40,7 @@ function loadProducts(): Product[] {
 function saveProducts(products: Product[]) {
   ensureDataDir();
   fs.writeFileSync(DATA_FILE, JSON.stringify(products, null, 2));
+  _cache = products; // Keep cache warm after write
 }
 
 export function getProducts(): Product[] {
@@ -79,6 +94,7 @@ export function getFilteredProducts(filters: {
   is_petrolia_pick?: boolean;
   is_miscellaneous?: boolean;
   sort?: string;
+  limit?: number;
 }): Product[] {
   let products = loadProducts();
 
@@ -126,24 +142,42 @@ export function getFilteredProducts(filters: {
     products = products.filter((p) => p.is_petrolia_pick);
   }
   if (filters.is_miscellaneous) {
-    products = products.filter((p) => p.is_miscellaneous);
+    // Fall back to Coolers & Ciders if no products explicitly tagged
+    const tagged = products.filter((p) => p.is_miscellaneous);
+    if (tagged.length > 0) {
+      products = tagged;
+    } else {
+      products = products.filter(
+        (p) =>
+          p.category.toLowerCase() === 'coolers & ciders' ||
+          p.category.toLowerCase() === 'coolers'
+      );
+    }
   }
 
   // Sorting
   if (filters.sort === 'price-asc') {
-    products.sort((a, b) => a.price - b.price);
+    products = [...products].sort((a, b) => a.price - b.price);
   } else if (filters.sort === 'price-desc') {
-    products.sort((a, b) => b.price - a.price);
+    products = [...products].sort((a, b) => b.price - a.price);
   } else if (filters.sort === 'name-asc') {
-    products.sort((a, b) => a.name.localeCompare(b.name));
+    products = [...products].sort((a, b) => a.name.localeCompare(b.name));
   } else if (filters.sort === 'name-desc') {
-    products.sort((a, b) => b.name.localeCompare(a.name));
+    products = [...products].sort((a, b) => b.name.localeCompare(a.name));
   } else if (filters.sort === 'newest') {
-    products.sort(
+    products = [...products].sort(
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }
 
+  // Optional limit for lightweight homepage fetches
+  if (filters.limit && filters.limit > 0) {
+    products = products.slice(0, filters.limit);
+  }
+
   return products;
 }
+
+// Export invalidator so admin actions can clear cache explicitly
+export { invalidateCache };
