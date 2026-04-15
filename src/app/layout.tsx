@@ -26,10 +26,6 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.petrolialiquorstore.com",
   },
-  icons: {
-    icon: "/images/logo.png",
-    apple: "/images/logo.png",
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
