@@ -46,7 +46,7 @@ function ProductsContent() {
   // Single fetch — all products once, then filter client-side
   useEffect(() => {
     setLoading(true);
-    fetch('/api/products')
+    fetch('/api/products', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => setAllProducts(Array.isArray(data) ? data : []))
       .catch(() => setAllProducts([]))

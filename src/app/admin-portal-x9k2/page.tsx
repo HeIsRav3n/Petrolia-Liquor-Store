@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Product } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { logoutAction } from './actions';
 
 const ITEMS_PER_PAGE = 50;
+
+// ─── Shared option lists ───────────────────────────────────────────────
+const CATEGORY_OPTIONS = ['Beer', 'Wine', 'Whisky', 'Vodka', 'Rum', 'Tequila', 'Gin', 'Brandy & Cognac', 'Coolers & Ciders', 'Spirits', 'Sparkling', 'Liqueur', 'Bitters', 'Miscellaneous'];
+const SIZE_OPTIONS = ['50ml', '143ml', '200ml', '250ml', '300ml', '350ml', '355ml', '360ml', '375ml', '500ml', '700ml', '750ml', '900ml', '945ml', '1L', '1.14L', '1.75L', '1.89L', '2L', '3L', '4L', '5L', '355ml x 12', '355ml x 24', '330ml x 12', '330ml x 24', '440ml x 8'];
+const COUNTRY_OPTIONS = ['Canada', 'USA', 'France', 'Italy', 'Spain', 'Australia', 'New Zealand', 'Mexico', 'Scotland', 'Ireland', 'Germany', 'Japan', 'Argentina', 'Chile', 'South Africa', 'Portugal', 'Netherlands', 'UK'];
+
+type StatFilter = 'all' | 'inStock' | 'outOfStock' | 'featured';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -15,6 +22,7 @@ export default function AdminDashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [statFilter, setStatFilter] = useState<StatFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -26,7 +34,8 @@ export default function AdminDashboard() {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/products');
+      const res = await fetch('/api/products', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
     } catch {
@@ -45,41 +54,76 @@ export default function AdminDashboard() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this product? This cannot be undone.')) return;
-    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-    if (res.ok) { showNotification('success', 'Product deleted'); fetchProducts(); }
-    else showNotification('error', 'Failed to delete product');
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        showNotification('success', 'Product deleted');
+        // Optimistic update — remove from local state immediately
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showNotification('error', err.error || 'Failed to delete product');
+      }
+    } catch {
+      showNotification('error', 'Network error — could not delete product');
+    }
   };
 
   const handleToggleStock = async (product: Product) => {
+    const newVal = !product.in_stock;
+    // Optimistic update
+    setProducts((prev) => prev.map((p) => p.id === product.id ? { ...p, in_stock: newVal } : p));
     const res = await fetch(`/api/products/${product.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ in_stock: !product.in_stock }),
+      body: JSON.stringify({ in_stock: newVal }),
     });
     if (res.ok) {
-      showNotification('success', `${product.name} marked as ${!product.in_stock ? 'in stock' : 'out of stock'}`);
-      fetchProducts();
+      showNotification('success', `${product.name} marked as ${newVal ? 'in stock' : 'out of stock'}`);
+    } else {
+      // Revert on failure
+      setProducts((prev) => prev.map((p) => p.id === product.id ? { ...p, in_stock: product.in_stock } : p));
+      showNotification('error', 'Failed to update stock');
     }
   };
 
   const handleToggleFeatured = async (product: Product) => {
+    const newVal = !product.featured;
+    setProducts((prev) => prev.map((p) => p.id === product.id ? { ...p, featured: newVal } : p));
     const res = await fetch(`/api/products/${product.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ featured: !product.featured }),
+      body: JSON.stringify({ featured: newVal }),
     });
     if (res.ok) {
-      showNotification('success', `${product.name} ${!product.featured ? 'featured' : 'unfeatured'}`);
-      fetchProducts();
+      showNotification('success', `${product.name} ${newVal ? 'featured' : 'unfeatured'}`);
+    } else {
+      setProducts((prev) => prev.map((p) => p.id === product.id ? { ...p, featured: product.featured } : p));
+      showNotification('error', 'Failed to update featured');
     }
   };
 
-  // Filtered + paginated
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !filterCategory || p.category === filterCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Stats
+  const stats = useMemo(() => ({
+    total: products.length,
+    inStock: products.filter((p) => p.in_stock).length,
+    outOfStock: products.filter((p) => !p.in_stock).length,
+    featured: products.filter((p) => p.featured).length,
+  }), [products]);
+
+  // Filtered products — search + category + stat card filter
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = !filterCategory || p.category === filterCategory;
+      const matchesStat =
+        statFilter === 'all' ? true :
+        statFilter === 'inStock' ? p.in_stock :
+        statFilter === 'outOfStock' ? !p.in_stock :
+        statFilter === 'featured' ? p.featured : true;
+      return matchesSearch && matchesCategory && matchesStat;
+    });
+  }, [products, searchQuery, filterCategory, statFilter]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice(
@@ -87,18 +131,16 @@ export default function AdminDashboard() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Reset page when filter changes
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, filterCategory]);
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, filterCategory, statFilter]);
 
-  // Dynamic category list
-  const categoryOptions = [...new Set(products.map((p) => p.category))].sort();
+  const categoryOptions = useMemo(() => [...new Set(products.map((p) => p.category))].sort(), [products]);
 
-  const stats = {
-    total: products.length,
-    inStock: products.filter((p) => p.in_stock).length,
-    outOfStock: products.filter((p) => !p.in_stock).length,
-    featured: products.filter((p) => p.featured).length,
-  };
+  const statCards = [
+    { key: 'all' as StatFilter, label: 'Total Products', value: stats.total, color: 'bg-blue-500', icon: '📦' },
+    { key: 'inStock' as StatFilter, label: 'In Stock', value: stats.inStock, color: 'bg-emerald-500', icon: '✅' },
+    { key: 'outOfStock' as StatFilter, label: 'Out of Stock', value: stats.outOfStock, color: 'bg-red-500', icon: '❌' },
+    { key: 'featured' as StatFilter, label: 'Featured', value: stats.featured, color: 'bg-amber-500', icon: '⭐' },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -155,15 +197,18 @@ export default function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
-        {/* ─── Stats ─── */}
+        {/* ─── Clickable Stat Cards ─── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {[
-            { label: 'Total Products', value: stats.total, color: 'bg-blue-500', icon: '📦' },
-            { label: 'In Stock', value: stats.inStock, color: 'bg-emerald-500', icon: '✅' },
-            { label: 'Out of Stock', value: stats.outOfStock, color: 'bg-red-500', icon: '❌' },
-            { label: 'Featured', value: stats.featured, color: 'bg-amber-500', icon: '⭐' },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-lg border border-gray-200 p-4 flex items-center gap-3 shadow-sm">
+          {statCards.map((stat) => (
+            <button
+              key={stat.key}
+              onClick={() => setStatFilter(stat.key)}
+              className={`bg-white rounded-lg border p-4 flex items-center gap-3 shadow-sm text-left transition-all hover:shadow-md ${
+                statFilter === stat.key
+                  ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
               <div className={`w-10 h-10 ${stat.color} rounded-lg flex items-center justify-center text-lg shrink-0`}>
                 {stat.icon}
               </div>
@@ -171,9 +216,20 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold text-[var(--color-primary)] leading-none">{stat.value}</p>
                 <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">{stat.label}</p>
               </div>
-            </div>
+            </button>
           ))}
         </div>
+
+        {/* Active stat filter badge */}
+        {statFilter !== 'all' && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Filtering by:</span>
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs font-semibold rounded-full">
+              {statCards.find((s) => s.key === statFilter)?.label}
+              <button onClick={() => setStatFilter('all')} className="ml-1 hover:opacity-70">✕</button>
+            </span>
+          </div>
+        )}
 
         {/* ─── Toolbar ─── */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
@@ -193,7 +249,7 @@ export default function AdminDashboard() {
                 </svg>
               </div>
 
-              {/* Category Filter — dynamic */}
+              {/* Category Filter */}
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
@@ -231,11 +287,8 @@ export default function AdminDashboard() {
                   : `(${filteredProducts.length} of ${products.length})`}
               </span>
             </h2>
-            {/* Pagination info */}
             {filteredProducts.length > ITEMS_PER_PAGE && (
-              <span className="text-xs text-gray-400">
-                Page {currentPage} / {totalPages}
-              </span>
+              <span className="text-xs text-gray-400">Page {currentPage} / {totalPages}</span>
             )}
           </div>
 
@@ -339,7 +392,6 @@ export default function AdminDashboard() {
               <div className="admin-product-cards divide-y divide-gray-100">
                 {paginatedProducts.map((product) => (
                   <div key={product.id} className="p-4 flex gap-3">
-                    {/* Thumbnail */}
                     <div className="w-16 h-16 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden p-1">
                       {product.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -348,8 +400,6 @@ export default function AdminDashboard() {
                         <span className="text-2xl">📦</span>
                       )}
                     </div>
-
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-[var(--color-primary)] text-sm line-clamp-2 leading-tight">{product.name}</p>
                       <p className="text-[11px] text-gray-400 mt-0.5">{product.category} · {product.size}</p>
@@ -373,8 +423,6 @@ export default function AdminDashboard() {
                         </button>
                       </div>
                     </div>
-
-                    {/* Actions */}
                     <div className="flex flex-col gap-2 shrink-0">
                       <button
                         onClick={() => { setEditingProduct(product); setShowAddModal(true); }}
@@ -402,7 +450,10 @@ export default function AdminDashboard() {
               {filteredProducts.length === 0 && (
                 <div className="p-12 text-center text-gray-400">
                   <div className="text-4xl mb-3">🔍</div>
-                  <p className="text-sm">No products found matching your search.</p>
+                  <p className="text-sm">No products found matching your filters.</p>
+                  <button onClick={() => { setSearchQuery(''); setFilterCategory(''); setStatFilter('all'); }} className="mt-3 text-sm text-[var(--color-primary)] hover:underline">
+                    Clear all filters
+                  </button>
                 </div>
               )}
             </>
@@ -471,8 +522,13 @@ export default function AdminDashboard() {
         <ProductModal
           product={editingProduct}
           onClose={() => { setShowAddModal(false); setEditingProduct(null); }}
-          onSave={() => {
-            fetchProducts();
+          onSave={(saved) => {
+            // Optimistic: update local state immediately
+            if (editingProduct) {
+              setProducts((prev) => prev.map((p) => p.id === saved.id ? saved : p));
+            } else {
+              setProducts((prev) => [saved, ...prev]);
+            }
             setShowAddModal(false);
             setEditingProduct(null);
             showNotification('success', editingProduct ? 'Product updated!' : 'Product added!');
@@ -493,7 +549,7 @@ function ProductModal({
 }: {
   product: Product | null;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (saved: Product) => void;
 }) {
   const [form, setForm] = useState({
     name: product?.name || '',
@@ -511,23 +567,34 @@ function ProductModal({
   });
   const [saving, setSaving] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setSaving(true);
-    const body = { ...form, price: parseFloat(form.price) };
-    const url = product ? `/api/products/${product.id}` : '/api/products';
-    const method = product ? 'PUT' : 'POST';
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (res.ok) onSave();
-    setSaving(false);
+    try {
+      const body = { ...form, price: parseFloat(form.price) };
+      const url = product ? `/api/products/${product.id}` : '/api/products';
+      const method = product ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        onSave(saved);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setError(err.error || 'Failed to save product. Please try again.');
+      }
+    } catch {
+      setError('Network error — please check your connection.');
+    } finally {
+      setSaving(false);
+    }
   };
-
-  const categoryOptions = ['Beer', 'Wine', 'Whisky', 'Vodka', 'Rum', 'Tequila', 'Gin', 'Coolers', 'Liqueur', 'Brandy', 'Cognac', 'Bitters', 'Miscellaneous'];
 
   return (
     <div
@@ -554,6 +621,13 @@ function ProductModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Error banner */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
           {/* Image Preview */}
           {form.image_url && !imageError && (
             <div className="flex justify-center">
@@ -605,56 +679,90 @@ function ProductModal({
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className="input-field"
               >
-                {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                {CATEGORY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
 
-            {/* Subcategory */}
+            {/* Subcategory — datalist dropdown */}
             <div>
               <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Subcategory</label>
               <input
                 type="text"
+                list="subcategory-options"
                 value={form.subcategory}
                 onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
                 className="input-field"
-                placeholder="e.g. Red Wine, IPA"
+                placeholder="e.g. Lager, Red Wine, IPA"
               />
+              <datalist id="subcategory-options">
+                <option value="Lager" /><option value="Ale" /><option value="Stout" /><option value="IPA" />
+                <option value="Pale Ale" /><option value="Wheat Beer" /><option value="Sour" />
+                <option value="Red Wine" /><option value="White Wine" /><option value="Rosé" />
+                <option value="Sparkling Wine" /><option value="Dessert Wine" />
+                <option value="Scotch" /><option value="Bourbon" /><option value="Canadian Whisky" />
+                <option value="Irish Whiskey" /><option value="Tennessee Whiskey" />
+                <option value="Vodka" /><option value="Gin" /><option value="Rum" /><option value="Tequila" />
+                <option value="Brandy" /><option value="Cognac" /><option value="Liqueur" />
+                <option value="Cooler" /><option value="Cider" /><option value="Soda" /><option value="Juice" />
+                <option value="Mixer" /><option value="Ice" /><option value="Gift Cards" />
+              </datalist>
             </div>
 
-            {/* Country */}
+            {/* Country — datalist dropdown */}
             <div>
               <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Country</label>
               <input
                 type="text"
+                list="country-options"
                 value={form.country}
                 onChange={(e) => setForm({ ...form, country: e.target.value })}
                 className="input-field"
                 placeholder="e.g. Canada, France"
               />
+              <datalist id="country-options">
+                {COUNTRY_OPTIONS.map((c) => <option key={c} value={c} />)}
+              </datalist>
             </div>
 
-            {/* Size */}
+            {/* Size — datalist dropdown */}
             <div>
               <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Size</label>
               <input
                 type="text"
+                list="size-options"
                 value={form.size}
                 onChange={(e) => setForm({ ...form, size: e.target.value })}
                 className="input-field"
-                placeholder="e.g. 750ml, 355ml x 24"
+                placeholder="e.g. 750ml, 1.14L"
               />
+              <datalist id="size-options">
+                {SIZE_OPTIONS.map((s) => <option key={s} value={s} />)}
+              </datalist>
             </div>
 
-            {/* Type */}
+            {/* Type — datalist dropdown */}
             <div>
               <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Type</label>
               <input
                 type="text"
+                list="type-options"
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
                 className="input-field"
-                placeholder="e.g. Lager, Red, Premium"
+                placeholder="e.g. Lager, Red, VSOP"
               />
+              <datalist id="type-options">
+                <option value="Lager" /><option value="Light Lager" /><option value="Pale Lager" />
+                <option value="Ale" /><option value="Stout" /><option value="IPA" /><option value="Wheat" />
+                <option value="Red" /><option value="White" /><option value="Rosé" /><option value="Sparkling" />
+                <option value="Scotch" /><option value="Bourbon" /><option value="Canadian" /><option value="Irish" />
+                <option value="Tennessee" /><option value="Blended" /><option value="Single Malt" />
+                <option value="VS" /><option value="VSOP" /><option value="XO" />
+                <option value="Reposado" /><option value="Blanco" /><option value="Añejo" />
+                <option value="Dark Rum" /><option value="White Rum" /><option value="Spiced Rum" />
+                <option value="London Dry" /><option value="Premium" /><option value="Cooler" />
+                <option value="Cider" /><option value="Soda" /><option value="Juice" /><option value="Mixer" />
+              </datalist>
             </div>
 
             {/* Description */}
@@ -677,7 +785,7 @@ function ProductModal({
                 value={form.image_url}
                 onChange={(e) => { setForm({ ...form, image_url: e.target.value }); setImageError(false); }}
                 className="input-field"
-                placeholder="/images/products/my-product.jpg"
+                placeholder="https://... or /images/products/my-product.jpg"
               />
               {imageError && <p className="text-[11px] text-red-500 mt-1">⚠ Image URL could not be loaded — check the path.</p>}
             </div>
