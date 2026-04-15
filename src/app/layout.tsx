@@ -27,8 +27,8 @@ export const metadata: Metadata = {
     canonical: "https://www.petrolialiquorstore.com",
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/favicon.ico",
+    icon: "/images/logo.png",
+    apple: "/images/logo.png",
   },
   appleWebApp: {
     capable: true,
