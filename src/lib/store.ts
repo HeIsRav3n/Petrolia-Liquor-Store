@@ -25,11 +25,11 @@ function loadProducts(): Product[] {
   ensureDataDir();
   if (fs.existsSync(DATA_FILE)) {
     try {
-      const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+      const raw = fs.readFileSync(DATA_FILE, 'utf-8').replace(/^\uFEFF/, ''); // strip BOM if present
       _cache = JSON.parse(raw) as Product[];
       return _cache;
     } catch {
-      // Corrupt file — fall through to defaults
+      // Corrupt or BOM-prefixed file — fall through to defaults
     }
   }
   // First run - seed with default products
@@ -39,7 +39,9 @@ function loadProducts(): Product[] {
 
 function saveProducts(products: Product[]) {
   ensureDataDir();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(products, null, 2));
+  // Write as UTF-8 without BOM — PowerShell's Set-Content adds BOM which breaks JSON.parse
+  const json = JSON.stringify(products);
+  fs.writeFileSync(DATA_FILE, Buffer.from(json, 'utf-8'));
   _cache = products; // Keep cache warm after write
 }
 
