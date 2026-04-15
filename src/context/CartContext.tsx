@@ -16,6 +16,8 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  recentlyAdded: CartItem | null;
+  clearRecentlyAdded: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -23,6 +25,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [recentlyAdded, setRecentlyAdded] = useState<CartItem | null>(null);
 
   // Load from local storage on mount
   useEffect(() => {
@@ -60,7 +63,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prevItems, { product, quantity }];
     });
+    // Trigger toast notification
+    setRecentlyAdded({ product, quantity });
   };
+
+  const clearRecentlyAdded = () => setRecentlyAdded(null);
 
   const removeFromCart = (productId: string) => {
     setItems((prevItems) => prevItems.filter((item) => item.product.id !== productId));
@@ -95,6 +102,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         totalItems,
         totalPrice,
+        recentlyAdded,
+        clearRecentlyAdded,
       }}
     >
       {children}

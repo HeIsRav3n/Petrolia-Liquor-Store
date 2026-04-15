@@ -26,14 +26,14 @@ export default function Home() {
 
   useEffect(() => {
     // Fetch Best Sellers — featured products, max 4, no browser cache
-    fetch('/api/products?featured=true&limit=4', { cache: 'no-store' })
+    fetch('/api/products?featured=true&in_stock=true&limit=4', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => setBestSellers(Array.isArray(data) ? data.slice(0, 4) : []))
       .catch(() => setBestSellers([]))
       .finally(() => setLoadingBest(false));
 
     // Fetch "Don't Forget These" — Coolers & Ciders, max 4
-    fetch('/api/products?is_miscellaneous=true&limit=4', { cache: 'no-store' })
+    fetch('/api/products?is_miscellaneous=true&in_stock=true&limit=4', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => setDontForgetProducts(Array.isArray(data) ? data.slice(0, 4) : []))
       .catch(() => setDontForgetProducts([]))

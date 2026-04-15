@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   
   const limitParam = searchParams.get('limit');
+  const inStockParam = searchParams.get('in_stock');
   const filters = {
     category: searchParams.get('category') || undefined,
     subcategory: searchParams.get('subcategory') || undefined,
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
     featured: searchParams.get('featured') === 'true' ? true : undefined,
     is_new: searchParams.get('is_new') === 'true' ? true : undefined,
     is_miscellaneous: searchParams.get('is_miscellaneous') === 'true' ? true : undefined,
+    in_stock: inStockParam === 'true' ? true : inStockParam === 'false' ? false : undefined,
     sort: searchParams.get('sort') || undefined,
     limit: limitParam ? parseInt(limitParam, 10) : undefined,
   };

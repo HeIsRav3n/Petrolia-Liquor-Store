@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AgeGate from "@/components/AgeGate";
 import FloatingCart from "@/components/FloatingCart";
+import AddedToCartToast from "@/components/AddedToCartToast";
 import AvailabilityPopup from "@/components/AvailabilityPopup";
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -84,6 +85,7 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
             <Footer />
             <FloatingCart />
+            <AddedToCartToast />
           </CartProvider>
         </ThemeProvider>
       </body>

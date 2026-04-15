@@ -150,7 +150,7 @@ function ProductsContent() {
         </div>
       </div>
 
-      <div className="max-w-[1060px] mx-auto px-4 md:px-[30px] mt-[30px] md:mt-[45px]">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-[30px] mt-[30px] md:mt-[40px]">
         {/* Mobile filter toggle */}
         <button
           onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
@@ -159,9 +159,9 @@ function ProductsContent() {
           {mobileFiltersOpen ? 'HIDE FILTERS' : 'SHOW FILTERS'}
         </button>
 
-        <div className="flex flex-col lg:flex-row gap-[30px]">
+        <div className="flex flex-col lg:flex-row gap-8 xl:gap-12">
           {/* Sidebar */}
-          <div className={`${mobileFiltersOpen ? 'block' : 'hidden'} lg:block w-full lg:w-[250px] shrink-0`}>
+          <div className={`${mobileFiltersOpen ? 'block' : 'hidden'} lg:block w-full lg:w-[260px] shrink-0`}>
             <FilterSidebar
               filters={filters}
               onFilterChange={handleFilterChange}

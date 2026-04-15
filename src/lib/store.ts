@@ -3,7 +3,11 @@ import { defaultProducts } from './data';
 import fs from 'fs';
 import path from 'path';
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'products.json');
+// ─── File paths ──────────────────────────────────────────────────────────────
+// On Vercel, the project dir is READ-ONLY at runtime. Writes go to /tmp.
+// On local dev, writes go directly to data/products.json.
+const PROJECT_FILE = path.join(process.cwd(), 'data', 'products.json');
+const TMP_FILE = '/tmp/petrolia_products.json';
 
 // ─── In-memory cache — eliminates repeated disk reads ───────────────────────
 let _cache: Product[] | null = null;
@@ -13,36 +17,64 @@ function invalidateCache() {
 }
 
 function ensureDataDir() {
-  const dir = path.dirname(DATA_FILE);
+  const dir = path.dirname(PROJECT_FILE);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function isWritable(filePath: string): boolean {
+  try {
+    fs.accessSync(path.dirname(filePath), fs.constants.W_OK);
+    return true;
+  } catch {
+    return false;
   }
 }
 
 function loadProducts(): Product[] {
   if (_cache !== null) return _cache;
 
-  ensureDataDir();
-  if (fs.existsSync(DATA_FILE)) {
-    try {
-      const raw = fs.readFileSync(DATA_FILE, 'utf-8').replace(/^\uFEFF/, ''); // strip BOM if present
-      _cache = JSON.parse(raw) as Product[];
-      return _cache;
-    } catch {
-      // Corrupt or BOM-prefixed file — fall through to defaults
+  // Priority: /tmp (has recent mutations) → project file (seed data) → defaults
+  for (const file of [TMP_FILE, PROJECT_FILE]) {
+    if (fs.existsSync(file)) {
+      try {
+        const raw = fs.readFileSync(file, 'utf-8').replace(/^\uFEFF/, ''); // strip BOM
+        const parsed = JSON.parse(raw) as Product[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          _cache = parsed;
+          return _cache;
+        }
+      } catch {
+        // corrupt file — try next source
+      }
     }
   }
-  // First run - seed with default products
+
+  // First run — seed defaults
   saveProducts(defaultProducts);
   return defaultProducts;
 }
 
 function saveProducts(products: Product[]) {
-  ensureDataDir();
-  // Write as UTF-8 without BOM — PowerShell's Set-Content adds BOM which breaks JSON.parse
   const json = JSON.stringify(products);
-  fs.writeFileSync(DATA_FILE, Buffer.from(json, 'utf-8'));
-  _cache = products; // Keep cache warm after write
+  const buf = Buffer.from(json, 'utf-8');
+
+  // Try the project data dir first (works in local dev)
+  try {
+    ensureDataDir();
+    if (isWritable(PROJECT_FILE)) {
+      fs.writeFileSync(PROJECT_FILE, buf);
+      _cache = products;
+      return;
+    }
+  } catch {
+    // fall through to /tmp
+  }
+
+  // Vercel / read-only environments — write to /tmp
+  fs.writeFileSync(TMP_FILE, buf);
+  _cache = products;
 }
 
 export function getProducts(): Product[] {
@@ -62,7 +94,7 @@ export function addProduct(product: Omit<Product, 'id' | 'created_at'>): Product
     is_miscellaneous: product.is_miscellaneous ?? false,
     created_at: new Date().toISOString().split('T')[0],
   };
-  products.push(newProduct);
+  products.unshift(newProduct); // add to front so it appears first
   saveProducts(products);
   return newProduct;
 }
@@ -79,7 +111,7 @@ export function updateProduct(id: string, updates: Partial<Product>): Product | 
 export function deleteProduct(id: string): boolean {
   const products = loadProducts();
   const filtered = products.filter((p) => p.id !== id);
-  if (filtered.length === products.length) return false;
+  if (filtered.length === products.length) return false; // not found
   saveProducts(filtered);
   return true;
 }
@@ -95,6 +127,7 @@ export function getFilteredProducts(filters: {
   is_new?: boolean;
   is_petrolia_pick?: boolean;
   is_miscellaneous?: boolean;
+  in_stock?: boolean;
   sort?: string;
   limit?: number;
 }): Product[] {
@@ -143,8 +176,10 @@ export function getFilteredProducts(filters: {
   if (filters.is_petrolia_pick) {
     products = products.filter((p) => p.is_petrolia_pick);
   }
+  if (filters.in_stock !== undefined) {
+    products = products.filter((p) => p.in_stock === filters.in_stock);
+  }
   if (filters.is_miscellaneous) {
-    // Fall back to Coolers & Ciders if no products explicitly tagged
     const tagged = products.filter((p) => p.is_miscellaneous);
     if (tagged.length > 0) {
       products = tagged;
@@ -173,7 +208,6 @@ export function getFilteredProducts(filters: {
     );
   }
 
-  // Optional limit for lightweight homepage fetches
   if (filters.limit && filters.limit > 0) {
     products = products.slice(0, filters.limit);
   }
@@ -181,5 +215,4 @@ export function getFilteredProducts(filters: {
   return products;
 }
 
-// Export invalidator so admin actions can clear cache explicitly
 export { invalidateCache };
