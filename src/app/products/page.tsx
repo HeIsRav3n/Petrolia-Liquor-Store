@@ -25,33 +25,39 @@ function ProductsContent() {
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (filters.category) params.set('category', filters.category);
-    if (filters.subcategory) params.set('subcategory', filters.subcategory);
-    if (filters.country) params.set('country', filters.country);
-    if (filters.size) params.set('size', filters.size);
-    if (filters.type) params.set('type', filters.type);
-    if (filters.search) params.set('search', filters.search);
-    if (filters.sort) params.set('sort', filters.sort);
-    if (searchParams.get('featured') === 'true') params.set('featured', 'true');
+    try {
+      const params = new URLSearchParams();
+      if (filters.category) params.set('category', filters.category);
+      if (filters.subcategory) params.set('subcategory', filters.subcategory);
+      if (filters.country) params.set('country', filters.country);
+      if (filters.size) params.set('size', filters.size);
+      if (filters.type) params.set('type', filters.type);
+      if (filters.search) params.set('search', filters.search);
+      if (filters.sort) params.set('sort', filters.sort);
+      if (searchParams.get('featured') === 'true') params.set('featured', 'true');
+      if (searchParams.get('is_miscellaneous') === 'true') params.set('is_miscellaneous', 'true');
 
-    const res = await fetch(`/api/products?${params.toString()}`);
-    const data = await res.json();
-    setProducts(data);
-    setLoading(false);
+      const res = await fetch(`/api/products?${params.toString()}`);
+      const data = await res.json();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
   }, [filters, searchParams]);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      await fetchProducts();
-    };
-    loadProducts();
+    fetchProducts();
   }, [fetchProducts]);
 
+  // Fetch ALL products once on mount for full filter sidebar options
   useEffect(() => {
     fetch('/api/products')
       .then((res) => res.json())
-      .then((data) => setAllProducts(data));
+      .then((data) => setAllProducts(Array.isArray(data) ? data : []))
+      .catch(() => setAllProducts([]));
   }, []);
 
   const handleFilterChange = (key: string, value: string) => {

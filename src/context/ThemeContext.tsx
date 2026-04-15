@@ -20,10 +20,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('petrolia-theme', 'light');
   }, []);
 
-  const toggleTheme = () => {
-    // Toggle functionality disabled
-    console.log('Theme toggle is disabled; currently locked to light mode.');
-  };
+  // Theme toggle is disabled — locked to light mode
+  const toggleTheme = () => { /* intentionally disabled */ };
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

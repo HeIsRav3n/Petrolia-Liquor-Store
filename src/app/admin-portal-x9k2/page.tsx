@@ -422,22 +422,37 @@ export default function AdminDashboard() {
                 >
                   ← Prev
                 </button>
-                {[...Array(Math.min(totalPages, 5))].map((_, i) => {
-                  const page = i + 1;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 text-sm rounded-md transition-colors ${
-                        currentPage === page
-                          ? 'bg-[var(--color-primary)] text-white'
-                          : 'border border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
+                {(() => {
+                  const pages: (number | '...')[] = [];
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (currentPage > 3) pages.push('...');
+                    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                      pages.push(i);
+                    }
+                    if (currentPage < totalPages - 2) pages.push('...');
+                    pages.push(totalPages);
+                  }
+                  return pages.map((p, idx) =>
+                    p === '...' ? (
+                      <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 text-sm">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage(p as number)}
+                        className={`w-8 h-8 text-sm rounded-md transition-colors ${
+                          currentPage === p
+                            ? 'bg-[var(--color-primary)] text-white'
+                            : 'border border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
                   );
-                })}
+                })()}
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}

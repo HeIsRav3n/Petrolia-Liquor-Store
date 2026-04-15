@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     search: searchParams.get('search') || undefined,
     featured: searchParams.get('featured') === 'true' ? true : undefined,
     is_new: searchParams.get('is_new') === 'true' ? true : undefined,
+    is_miscellaneous: searchParams.get('is_miscellaneous') === 'true' ? true : undefined,
     sort: searchParams.get('sort') || undefined,
   };
 
